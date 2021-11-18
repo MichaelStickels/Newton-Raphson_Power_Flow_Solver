@@ -72,8 +72,8 @@ for ind in lineData.index:
     matrix_Y_imaginary[j,j] = matrix_Y_imaginary[j,j] + lineData['Btotal, p.u.'][ind]/2
 
 # Export matrix Y to csv files to check
-pd.DataFrame(matrix_Y_real).to_csv("matrix_Y_real.csv")
-pd.DataFrame(matrix_Y_imaginary).to_csv("matrix_Y_imaginary.csv")
+pd.DataFrame(matrix_Y_real).to_csv("output/matrix_Y_real.csv")
+pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
 
 # print(matrix_Y_real)
 # print(matrix_Y_imaginary)
