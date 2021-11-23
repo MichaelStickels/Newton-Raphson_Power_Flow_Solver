@@ -17,18 +17,18 @@ S_BASE = 100 #MVA
 
 # Read in excel input file
 input = pd.read_excel("data/system_basecase.xlsx", sheet_name=None)
-#print(input)
+print(input)
 busData = input['BusData']
 lineData = input['LineData']
 
 # number of buses
 num_Busses = busData.shape[0]
-#print(num_Busses)
+print(num_Busses)
 
 # Initialize admittance matrix
 matrix_Y_real = np.zeros((num_Busses,num_Busses))
 matrix_Y_imaginary = np.zeros((num_Busses,num_Busses))
-#print(matrix_Y)
+print(matrix_Y)
 
 
 
@@ -78,6 +78,80 @@ pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
 # print(matrix_Y_real)
 # print(matrix_Y_imaginary)
 
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Determine P and Q Equations at Buses
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Build Jacobian Matrix
+
+
+
+# Invert Jacobian Matrix
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Calculate P and Q Mismatches
+
+
+
+# Log Convergence For All Values to CSV
+
+
+
+# Exit Function:    If P < 0.1 && Q < 0.1
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Determine P and Q At Generators
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Calculate Line Currents
+
+
+# Calculate Line P, Q and S
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Build Ratings Matrix [Use Common Structure For All Matrices]
+
+
+# Check Node Voltages Against Ratings
+
+
+# Check Line Power Flows Against Ratings
+
+
+# Check Generator Power Against Ratings     ???????????
+
+
+# Flag Violations of Operating Limits / Settings
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
