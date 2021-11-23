@@ -17,18 +17,18 @@ S_BASE = 100 #MVA
 
 # Read in excel input file
 input = pd.read_excel("data/system_basecase.xlsx", sheet_name=None)
-print(input)
+#print(input)
 busData = input['BusData']
 lineData = input['LineData']
 
 # number of buses
 num_Busses = busData.shape[0]
-print(num_Busses)
+#print(num_Busses)
 
 # Initialize admittance matrix
 matrix_Y_real = np.zeros((num_Busses,num_Busses))
 matrix_Y_imaginary = np.zeros((num_Busses,num_Busses))
-print(matrix_Y)
+#print(matrix_Y)
 
 
 
