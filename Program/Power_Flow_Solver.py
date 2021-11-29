@@ -80,7 +80,7 @@ pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
 # print(matrix_Y_real)
 # print(matrix_Y_imaginary)
 
-
+# Need to combine Y-matrices together????
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -94,13 +94,53 @@ pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Build Jacobian Matrix
+# Initialize Jacobian matrix
+matrix_Jacobian = np.zeros((num_Busses*2,num_Busses*2))
 
+# For H quadrant:
+# Off diagonals: 
+# matrix_Jacobian[i,j] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))
+
+# Collector: collector += v_k * v_i * (matrix_Y_imaginary[i,j] * cos (theta) - matrix_Y_real[i,j] * sin (theta))
+
+# Diagonals: 
+# matrix_Jacobian[i,i] = collector
+
+
+
+# For M quadrant:
+# Off diagonals:
+# matrix_Jacobian[i,j+12] = v_k * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
+
+# Collector: collector2 += v_i * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
+
+# Diagonals:
+# matrix_Jacobian[i,i+12] = collector2 + 2 * matrix_Y_real[i,i] * v_k
+
+
+
+# For N quadrant:
+# Off diagonals:
+# matrix_Jacobian[i+12,j] = v_k * v_i * (-1 * matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
+
+# Collector: collector3 += v_k * v_i * (* matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))
+
+# Diagonals:
+# matrix_Jacobian[i+12, i] = collector3
+
+# For L quadrant:
+# Off diagonals:
+# matrix_Jacobian[i+12,j+12] = v_k * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
+
+# Collector: collector4 += v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
+
+# Diagonals:
+# matrix_Jacobian[i+12,i+12] = collector4 - 2 * matrix_Y_imaginary * v_k
 
 
 # Invert Jacobian Matrix
 
-
+matrix_Inverse_Jacobian = np.linalg,inv(matrix_jacobian)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
@@ -110,13 +150,33 @@ pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Calculate P and Q Mismatches
 
+# Initialize matrix_PQ_quantities (needs to be single dimension with P_n in top half and Q_n in bottom half)
+# Read P and Q data from csv and input to matrix_PQ_quantities
 
+# Initialize matrix_PQ_equations (needs to be single dimension with P_n in top half and Q_n in bottom half and same dimension as matrix_PQ_quantities)
+# Combine PQ matrices
+# matrix_PQ_equations[i,j] = matrix_PQ_equations[i,j] - matrix_PQ_quantities[i,j]
 
-# Log Convergence For All Values to CSV
+# Initialize matrix_deltaTheta_deltaV (needs to be same shape as matrix_PQ_equations)
 
+# Flat Start (set all values in matrix_deltaTheta_deltaV to 1.0 and 0.0, respectively)
 
+# Update matrix_PQ_quantities after flat start
 
-# Exit Function:    If P < 0.1 && Q < 0.1
+# Initialize matrix_PQ_mismatch and matrix_convergence_log (needs 4 columns)
+# Determine largest mismatch in both P and Q
+# Add largest mismatch of both P and Q and ij values to matrix_convergence_log
+
+# While any values of matrix_PQ_mismatch > 0.1:
+    # matrix_deltaTheta_deltaV = -1 * matrix_Inverse_jacobian * matrix_PQ_quantities
+    # matrix_deltaTheta_deltaV += matrix_deltaTheta_deltaV
+    # matrix_PQ_quantities = matrix_PQ_equations with matrix_deltaTheta_deltaV plugged in
+    # determine largest mismatch in both P and Q
+    # add largest mismatch of both P and Q and ij values to matrix_convergence_log
+
+# Print matrix_convergence_log
+# Print matrix_PQ_qunatities
+# Print 
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
