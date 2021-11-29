@@ -44,9 +44,11 @@ for ind in lineData.index:
 
     # Real part -> G(i,j) = (-R)/(R^2+X^2)
     matrix_Y_real[i,j] = (-lineData['Rtotal, p.u.'][ind])/(lineData['Rtotal, p.u.'][ind]**2 + lineData['Xtotal, p.u.'][ind]**2)
+    matrix_Y_real[j,i] = (-lineData['Rtotal, p.u.'][ind])/(lineData['Rtotal, p.u.'][ind]**2 + lineData['Xtotal, p.u.'][ind]**2)
 
     # Imaginary part -> B(i,j) = (X)/(R^2+X^2)
     matrix_Y_imaginary[i,j] = (lineData['Xtotal, p.u.'][ind])/(lineData['Rtotal, p.u.'][ind]**2 + lineData['Xtotal, p.u.'][ind]**2)
+    matrix_Y_imaginary[j,i] = (lineData['Xtotal, p.u.'][ind])/(lineData['Rtotal, p.u.'][ind]**2 + lineData['Xtotal, p.u.'][ind]**2)
 
 # Sum rows/cols for imtermidiate bus admittance
 for i in np.arange(0,matrix_Y_real.shape[0]):
