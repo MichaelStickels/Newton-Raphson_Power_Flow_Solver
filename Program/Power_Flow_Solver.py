@@ -8,6 +8,7 @@
 
 # Imports
 import numpy as np
+from numpy.core.numeric import empty_like
 import pandas as pd
 
 
@@ -84,30 +85,24 @@ pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Determine P and Q Equations at Buses
 
-# Initialize matrix_PQ_equations (needs to be single dimension with P_n in top half and Q_n in bottom half)
-def func():
-    0
+def P_k_Equation(k, v_t_matrix):
+    p_temp = 0
 
-matrix_PQ_equations = np.full((num_Busses*2,1), func)
-
-
-for k in np.arange(num_Busses):
     for i in np.arange(num_Busses):
-        # Insert P_k equations               
-        #matrix_PQ_equations[k,1] += busData['V Set'][k] * busData['V Set'][i] * (matrix_Y_real[k,i] * np.cos(theta) + matrix_Y_imaginary[i,j] * np.sin(theta))  
-        def pfunction(k, i, v_k, v_i, theta):
-            v_k * v_i * (matrix_Y_real[k,i] * np.cos(theta) + matrix_Y_imaginary[k,i] * np.sin(theta))  
         
-        print(pfunction)
-        matrix_PQ_equations[k,0] += pfunction
+        p_temp += v_t_matrix[k + num_Busses] * v_t_matrix[i + num_Busses] * (matrix_Y_real[k,i] * np.cos(v_t_matrix[k] - v_t_matrix[i]) + matrix_Y_imaginary[k,i] * np.sin(v_t_matrix[k] - v_t_matrix[i]))
+    
+    return p_temp
 
-        # Insert Q_k equations  
-        #matrix_PQ_equations[k + num_Busses,1] += busData['V Set'][k] * busData['V Set'][i] * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))
-        def qfunction(k, i, v_k, v_i, theta):
-            v_k * v_i * (matrix_Y_real[k,i] * np.sin(theta) - matrix_Y_imaginary[k,i] * np.cos(theta))  
+def Q_k_Equation(k, v_t_matrix):
+    q_temp = 0
+
+    for i in np.arange(num_Busses):
         
-        print(qfunction)
-        matrix_PQ_equations[k + num_Busses,0] += qfunction
+        q_temp += v_t_matrix[k + num_Busses] * v_t_matrix[i + num_Busses] * (matrix_Y_real[k,i] * np.sin(v_t_matrix[k] - v_t_matrix[i]) - matrix_Y_imaginary[k,i] * np.cos(v_t_matrix[k] - v_t_matrix[i]))
+    
+    
+    return q_temp
 
 
 
@@ -117,7 +112,6 @@ for k in np.arange(num_Busses):
     # matrix_PQ_equations[i + num_Busses,1] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))     ## Q EQUATIONS
     # matrix_PQ_equations[i + num_Busses,1] += v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))   ## Q SUMATION
 
-# print(matrix_PQ_equations)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 
@@ -136,6 +130,24 @@ for k in np.arange(num_Busses):
 # Diagonals: 
 # matrix_J[i,i] = collector
 
+def H_quadrant_equation(k, i, v_t_matrix):
+    
+    H_temp = 0
+
+    if(k == i):
+
+        for x in np.arange(num_Busses):
+            if(x != k):
+                
+                H_temp += v_t_matrix[k + num_Busses] * v_t_matrix[x + num_Busses] * (-matrix_Y_real[k,x] * np.sin(v_t_matrix[k] - v_t_matrix[x]) + matrix_Y_imaginary[k,x] * np.cos(v_t_matrix[k] - v_t_matrix[x]))
+
+    else:
+
+        H_temp = v_t_matrix[k + num_Busses] * v_t_matrix[i + num_Busses] * (matrix_Y_real[k,i] * np.sin(v_t_matrix[k] - v_t_matrix[i]) - matrix_Y_imaginary[k,i] * np.cos(v_t_matrix[k] - v_t_matrix[i]))
+    
+    return H_temp
+
+
 
 
 # For M quadrant:
@@ -146,6 +158,25 @@ for k in np.arange(num_Busses):
 
 # Diagonals:
 # matrix_J[i,i + num_Busses] = collector2 + 2 * matrix_Y_real[i,i] * v_k                  ## (v_k = this bus; v_i = opposite bus)
+
+def M_quadrant_equation(k, i, v_t_matrix):
+    
+    M_temp = 0
+
+    if(k == i):
+
+        for x in np.arange(num_Busses):
+            if(x != k):
+                
+                M_temp += v_t_matrix[x + num_Busses] * (matrix_Y_real[k,x] * np.cos(v_t_matrix[k] - v_t_matrix[x]) + matrix_Y_imaginary[k,x] * np.sin(v_t_matrix[k] - v_t_matrix[x]))
+
+        M_temp +=  2 * matrix_Y_real[k,k] * v_t_matrix[k + num_Busses]
+
+    else:
+
+        M_temp = v_t_matrix[k + num_Busses] * (matrix_Y_real[k,i] * np.cos(v_t_matrix[k] - v_t_matrix[i]) + matrix_Y_imaginary[k,i] * np.sin(v_t_matrix[k] - v_t_matrix[i]))
+    
+    return M_temp
 
 
 
@@ -158,6 +189,23 @@ for k in np.arange(num_Busses):
 # Diagonals:
 # matrix_J[i + num_Busses, i] = collector3
 
+def N_quadrant_equation(k, i, v_t_matrix):
+    
+    N_temp = 0
+
+    if(k == i):
+
+        for x in np.arange(num_Busses):
+            if(x != k):
+                
+                N_temp += v_t_matrix[k + num_Busses] * v_t_matrix[x + num_Busses] * (-matrix_Y_real[k,x] * np.cos(v_t_matrix[k] - v_t_matrix[x]) - matrix_Y_imaginary[k,x] * np.sin(v_t_matrix[k] - v_t_matrix[x]))
+
+    else:
+
+        N_temp = v_t_matrix[k + num_Busses] * v_t_matrix[x + num_Busses] * (-matrix_Y_real[k,i] * np.cos(v_t_matrix[k] - v_t_matrix[i]) - matrix_Y_imaginary[k,i] * np.sin(v_t_matrix[k] - v_t_matrix[i]))
+    
+    return N_temp
+
 # For L quadrant:
 # Off diagonals:
 # matrix_J[i + num_Busses, j + num_Busses] = v_k * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
@@ -166,6 +214,25 @@ for k in np.arange(num_Busses):
 
 # Diagonals:
 # matrix_J[ i+ num_Busses, i + num_Busses] = collector4 - 2 * matrix_Y_imaginary * v_k
+
+
+def L_quadrant_equation(k, i, v_t_matrix):
+    
+    L_temp = 0
+
+    if(k == i):
+
+        for x in np.arange(num_Busses):
+            if(x != k):
+                
+                L_temp += v_t_matrix[x + num_Busses] * (matrix_Y_real[k,x] * np.cos(v_t_matrix[k] - v_t_matrix[x]) + matrix_Y_imaginary[k,x] * np.sin(v_t_matrix[k] - v_t_matrix[x]))
+
+    else:
+
+        L_temp = v_t_matrix[k + num_Busses] * (matrix_Y_real[k,i] * np.cos(v_t_matrix[k] - v_t_matrix[i]) + matrix_Y_imaginary[k,i] * np.sin(v_t_matrix[k] - v_t_matrix[i]))
+    
+    return L_temp
+
 
 # print(matrix_J)
 
