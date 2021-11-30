@@ -88,8 +88,16 @@ pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Determine P and Q Equations at Buses
 
+# Initialize matrix_PQ_equations (needs to be single dimension with P_n in top half and Q_n in bottom half)
+matrix_PQ_equations = np.zeros((1,num_Busses*2))
 
+# For rows i in Y matricies:
+    # matrix_PQ_equations[1,i] = v_k * v_i * (matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))                  ## P EQUATIONS  (v_k = this bus; v_i = opposite bus)
+    # matrix_PQ_equations[1,i] += v_k * v_i * (matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))                 ## P SUMATION
+    # matrix_PQ_equations[1,i + num_Busses] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))     ## Q EQUATIONS
+    # matrix_PQ_equations[1,i + num_Busses"] += v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))   ## Q SUMATION
 
+# print(matrix_PQ_equations)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 
@@ -99,9 +107,9 @@ matrix_Jacobian = np.zeros((num_Busses*2,num_Busses*2))
 
 # For H quadrant:
 # Off diagonals: 
-# matrix_Jacobian[i,j] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))
+# matrix_Jacobian[i,j] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))                 ## (v_k = this bus; v_i = opposite bus)
 
-# Collector: collector += v_k * v_i * (matrix_Y_imaginary[i,j] * cos (theta) - matrix_Y_real[i,j] * sin (theta))
+# Collector: collector += v_k * v_i * (matrix_Y_imaginary[i,j] * cos (theta) - matrix_Y_real[i,j] * sin (theta))                 ## (v_k = this bus; v_i = opposite bus)
 
 # Diagonals: 
 # matrix_Jacobian[i,i] = collector
@@ -110,72 +118,78 @@ matrix_Jacobian = np.zeros((num_Busses*2,num_Busses*2))
 
 # For M quadrant:
 # Off diagonals:
-# matrix_Jacobian[i,j+12] = v_k * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
+# matrix_Jacobian[i,j + num_Busses] = v_k * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))       ## (v_k = this bus; v_i = opposite bus)
 
-# Collector: collector2 += v_i * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
+# Collector: collector2 += v_i * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))                  ## (v_k = this bus; v_i = opposite bus)
 
 # Diagonals:
-# matrix_Jacobian[i,i+12] = collector2 + 2 * matrix_Y_real[i,i] * v_k
+# matrix_Jacobian[i,i + num_Busses] = collector2 + 2 * matrix_Y_real[i,i] * v_k                  ## (v_k = this bus; v_i = opposite bus)
 
 
 
 # For N quadrant:
 # Off diagonals:
-# matrix_Jacobian[i+12,j] = v_k * v_i * (-1 * matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
+# matrix_Jacobian[i + num_Busses, j] = v_k * v_i * ((-1) * matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
 
 # Collector: collector3 += v_k * v_i * (* matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))
 
 # Diagonals:
-# matrix_Jacobian[i+12, i] = collector3
+# matrix_Jacobian[i + num_Busses, i] = collector3
 
 # For L quadrant:
 # Off diagonals:
-# matrix_Jacobian[i+12,j+12] = v_k * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
+# matrix_Jacobian[i + num_Busses, j + num_Busses] = v_k * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
 
 # Collector: collector4 += v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
 
 # Diagonals:
-# matrix_Jacobian[i+12,i+12] = collector4 - 2 * matrix_Y_imaginary * v_k
+# matrix_Jacobian[ i+ num_Busses, i + num_Busses] = collector4 - 2 * matrix_Y_imaginary * v_k
 
+# print(matrix_Jacobian)
 
 # Invert Jacobian Matrix
 
-matrix_Inverse_Jacobian = np.linalg,inv(matrix_jacobian)
+matrix_Inverse_Jacobian = np.linalg.inv(matrix_jacobian)
+
+# print(matrix_Inverse_Jacobian)
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
 
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Calculate P and Q Mismatches
 
-# Initialize matrix_PQ_quantities (needs to be single dimension with P_n in top half and Q_n in bottom half)
-# Read P and Q data from csv and input to matrix_PQ_quantities
+# Initialize matrix_PQ_given (needs to be single dimension with P_n in top half and Q_n in bottom half)
+# Read P and Q data from csv and input to matrix_PQ_given
+matrix_PQ_given = np.zeros((1,num_busses*2))
 
-# Initialize matrix_PQ_equations (needs to be single dimension with P_n in top half and Q_n in bottom half and same dimension as matrix_PQ_quantities)
-# Combine PQ matrices
-# matrix_PQ_equations[i,j] = matrix_PQ_equations[i,j] - matrix_PQ_quantities[i,j]
+# Combine PQ matrices via loop
+matrix_PQ_equations[i,j] = matrix_PQ_equations[i,j] - matrix_PQ_given[i,j]   ## matrix_PQ_equations comes from two sections above.
 
 # Initialize matrix_deltaTheta_deltaV (needs to be same shape as matrix_PQ_equations)
+matrix_deltaTheta_deltaV = np.zeros((1,num_Busses*2))
 
 # Flat Start (set all values in matrix_deltaTheta_deltaV to 1.0 and 0.0, respectively)
 
 # Update matrix_PQ_quantities after flat start
 
 # Initialize matrix_PQ_mismatch and matrix_convergence_log (needs 4 columns)
+matrix_PQ_mismatch = np.zeros((1,num_busses*2))
+matrix_convergence_log = np.zeros((4,num_Busses*2))
+
 # Determine largest mismatch in both P and Q
 # Add largest mismatch of both P and Q and ij values to matrix_convergence_log
 
 # While any values of matrix_PQ_mismatch > 0.1:
-    # matrix_deltaTheta_deltaV = -1 * matrix_Inverse_jacobian * matrix_PQ_quantities
+    # matrix_deltaTheta_deltaV =  matrix_Inverse_jacobian * matrix_PQ_quantities * (-1)
     # matrix_deltaTheta_deltaV += matrix_deltaTheta_deltaV
     # matrix_PQ_quantities = matrix_PQ_equations with matrix_deltaTheta_deltaV plugged in
     # determine largest mismatch in both P and Q
     # add largest mismatch of both P and Q and ij values to matrix_convergence_log
 
 # Print matrix_convergence_log
-# Print matrix_PQ_qunatities
+# Print matrix_PQ_quantities
 # Print 
 
 
