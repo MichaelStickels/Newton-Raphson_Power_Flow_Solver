@@ -202,7 +202,7 @@ def N_quadrant_equation(k, i, v_t_mat):
 
     else:
 
-        N_temp = v_t_mat[k + num_Busses] * v_t_mat[x + num_Busses] * (-matrix_Y_real[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]))
+        N_temp = v_t_mat[k + num_Busses] * v_t_mat[i + num_Busses] * (-matrix_Y_real[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]))
     
     return N_temp
 
@@ -248,7 +248,7 @@ def L_quadrant_equation(k, i, v_t_mat):
 
 # Function to calculate PQ matrix
 def PQ_Calculate(v_t_mat):
-    pq_mat = np.zeros(num_Busses*2, 1)
+    pq_mat = np.zeros((num_Busses*2, 1))
 
     for k in np.arange(num_Busses):
 
@@ -264,7 +264,7 @@ def PQ_Calculate(v_t_mat):
 #       (N L)
 #
 def J_Calculate(v_t_mat):
-    J_mat = np.zeros(num_Busses*2, num_Busses*2)
+    J_mat = np.zeros((num_Busses*2, num_Busses*2))
 
     for a in np.arange(num_Busses):
 
@@ -301,25 +301,40 @@ max_mismatch = float("inf")
 
 
 # Calculate initial PQ Matrix
+PQ_matrix = PQ_Calculate(V_T_matrix)
+
+max_iterations = 20
+iteration = 1
 
 
-
-
-while(max_mismatch >= acceptable_mismatch):
+while(max_mismatch >= acceptable_mismatch and iteration <= max_iterations - 1):
 
     # Build Jacobian
-
+    J_matrix = J_Calculate(V_T_matrix)
 
     # Invert Jacobian
-
+    J_inverse = np.linalg.inv(J_matrix)
 
     # Calculate corrections
-
+    delta_VT_matrix = np.matmul(-J_inverse, PQ_matrix)
 
     # Update V and T
-
+    V_T_new = V_T_matrix + delta_VT_matrix
 
     # Calculate Mismatch
+    PQ_new = PQ_Calculate(V_T_new)
+
+    PQ_mismatch = np.abs(PQ_new - PQ_matrix)
+
+    max_mismatch = np.amax(PQ_mismatch)
+    print('Max Mismatch:', max_mismatch)
+
+    PQ_matrix = PQ_new
+    V_T_matrix = V_T_new
+
+    iteration += 1
+
+print(iteration)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
