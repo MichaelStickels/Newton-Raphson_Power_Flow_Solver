@@ -65,11 +65,7 @@ for ind in lineData.index:
     i = lineData['From'][ind] - 1
     j = lineData['To'][ind] - 1
 
-    # Real part -> G(i,i) = G(i,i) + B_i/2
-    matrix_Y_real[i,i] = matrix_Y_real[i,i] + lineData['Btotal, p.u.'][ind]/2
-    matrix_Y_real[j,j] = matrix_Y_real[j,j] + lineData['Btotal, p.u.'][ind]/2
-
-    # Imaginary part -> B(i,j) = (X)/(R^2+X^2)
+    # Imaginary part -> B(i,i) = G(i,i) + B_i/2
     matrix_Y_imaginary[i,i] = matrix_Y_imaginary[i,i] + lineData['Btotal, p.u.'][ind]/2
     matrix_Y_imaginary[j,j] = matrix_Y_imaginary[j,j] + lineData['Btotal, p.u.'][ind]/2
 
@@ -80,76 +76,102 @@ pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
 # print(matrix_Y_real)
 # print(matrix_Y_imaginary)
 
-# Need to combine Y-matrices together????
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+
+
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Determine P and Q Equations at Buses
 
 # Initialize matrix_PQ_equations (needs to be single dimension with P_n in top half and Q_n in bottom half)
-matrix_PQ_equations = np.zeros((1,num_Busses*2))
+def func():
+    0
+
+matrix_PQ_equations = np.full((num_Busses*2,1), func)
+
+
+for k in np.arange(num_Busses):
+    for i in np.arange(num_Busses):
+        # Insert P_k equations               
+        #matrix_PQ_equations[k,1] += busData['V Set'][k] * busData['V Set'][i] * (matrix_Y_real[k,i] * np.cos(theta) + matrix_Y_imaginary[i,j] * np.sin(theta))  
+        def pfunction(k, i, v_k, v_i, theta):
+            v_k * v_i * (matrix_Y_real[k,i] * np.cos(theta) + matrix_Y_imaginary[k,i] * np.sin(theta))  
+        
+        print(pfunction)
+        matrix_PQ_equations[k,0] += pfunction
+
+        # Insert Q_k equations  
+        #matrix_PQ_equations[k + num_Busses,1] += busData['V Set'][k] * busData['V Set'][i] * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))
+        def qfunction(k, i, v_k, v_i, theta):
+            v_k * v_i * (matrix_Y_real[k,i] * np.sin(theta) - matrix_Y_imaginary[k,i] * np.cos(theta))  
+        
+        print(qfunction)
+        matrix_PQ_equations[k + num_Busses,0] += qfunction
+
+
 
 # For rows i in Y matricies:
-    # matrix_PQ_equations[1,i] = v_k * v_i * (matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))                  ## P EQUATIONS  (v_k = this bus; v_i = opposite bus)
-    # matrix_PQ_equations[1,i] += v_k * v_i * (matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))                 ## P SUMATION
-    # matrix_PQ_equations[1,i + num_Busses] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))     ## Q EQUATIONS
-    # matrix_PQ_equations[1,i + num_Busses"] += v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))   ## Q SUMATION
+    # matrix_PQ_equations[i,1] = v_k * v_i * (matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))                  ## P EQUATIONS  (v_k = this bus; v_i = opposite bus)
+    # matrix_PQ_equations[i,1] += v_k * v_i * (matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))                 ## P SUMATION
+    # matrix_PQ_equations[i + num_Busses,1] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))     ## Q EQUATIONS
+    # matrix_PQ_equations[i + num_Busses,1] += v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))   ## Q SUMATION
 
 # print(matrix_PQ_equations)
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 
+
+
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Initialize Jacobian matrix
-matrix_Jacobian = np.zeros((num_Busses*2,num_Busses*2))
+# matrix_J = np.zeros((num_Busses*2,num_Busses*2))
 
 # For H quadrant:
 # Off diagonals: 
-# matrix_Jacobian[i,j] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))                 ## (v_k = this bus; v_i = opposite bus)
+# matrix_J[i,j] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))                 ## (v_k = this bus; v_i = opposite bus)
 
 # Collector: collector += v_k * v_i * (matrix_Y_imaginary[i,j] * cos (theta) - matrix_Y_real[i,j] * sin (theta))                 ## (v_k = this bus; v_i = opposite bus)
 
 # Diagonals: 
-# matrix_Jacobian[i,i] = collector
+# matrix_J[i,i] = collector
 
 
 
 # For M quadrant:
 # Off diagonals:
-# matrix_Jacobian[i,j + num_Busses] = v_k * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))       ## (v_k = this bus; v_i = opposite bus)
+# matrix_J[i,j + num_Busses] = v_k * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))       ## (v_k = this bus; v_i = opposite bus)
 
 # Collector: collector2 += v_i * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))                  ## (v_k = this bus; v_i = opposite bus)
 
 # Diagonals:
-# matrix_Jacobian[i,i + num_Busses] = collector2 + 2 * matrix_Y_real[i,i] * v_k                  ## (v_k = this bus; v_i = opposite bus)
+# matrix_J[i,i + num_Busses] = collector2 + 2 * matrix_Y_real[i,i] * v_k                  ## (v_k = this bus; v_i = opposite bus)
 
 
 
 # For N quadrant:
 # Off diagonals:
-# matrix_Jacobian[i + num_Busses, j] = v_k * v_i * ((-1) * matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
+# matrix_J[i + num_Busses, j] = v_k * v_i * ((-1) * matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
 
 # Collector: collector3 += v_k * v_i * (* matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))
 
 # Diagonals:
-# matrix_Jacobian[i + num_Busses, i] = collector3
+# matrix_J[i + num_Busses, i] = collector3
 
 # For L quadrant:
 # Off diagonals:
-# matrix_Jacobian[i + num_Busses, j + num_Busses] = v_k * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
+# matrix_J[i + num_Busses, j + num_Busses] = v_k * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
 
 # Collector: collector4 += v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
 
 # Diagonals:
-# matrix_Jacobian[ i+ num_Busses, i + num_Busses] = collector4 - 2 * matrix_Y_imaginary * v_k
+# matrix_J[ i+ num_Busses, i + num_Busses] = collector4 - 2 * matrix_Y_imaginary * v_k
 
-# print(matrix_Jacobian)
+# print(matrix_J)
 
 # Invert Jacobian Matrix
 
-matrix_Inverse_Jacobian = np.linalg.inv(matrix_jacobian)
+# matrix_Inverse_Jacobian = np.linalg.inv(matrix_J)
 
 # print(matrix_Inverse_Jacobian)
 
@@ -162,21 +184,21 @@ matrix_Inverse_Jacobian = np.linalg.inv(matrix_jacobian)
 
 # Initialize matrix_PQ_given (needs to be single dimension with P_n in top half and Q_n in bottom half)
 # Read P and Q data from csv and input to matrix_PQ_given
-matrix_PQ_given = np.zeros((1,num_busses*2))
+# matrix_PQ_given = np.zeros((1,num_Busses*2))
 
 # Combine PQ matrices via loop
-matrix_PQ_equations[i,j] = matrix_PQ_equations[i,j] - matrix_PQ_given[i,j]   ## matrix_PQ_equations comes from two sections above.
+# matrix_PQ_equations[i,j] = matrix_PQ_equations[i,j] - matrix_PQ_given[i,j]   ## matrix_PQ_equations comes from two sections above.
 
 # Initialize matrix_deltaTheta_deltaV (needs to be same shape as matrix_PQ_equations)
-matrix_deltaTheta_deltaV = np.zeros((1,num_Busses*2))
+# matrix_deltaTheta_deltaV = np.zeros((1,num_Busses*2))
 
 # Flat Start (set all values in matrix_deltaTheta_deltaV to 1.0 and 0.0, respectively)
 
 # Update matrix_PQ_quantities after flat start
 
 # Initialize matrix_PQ_mismatch and matrix_convergence_log (needs 4 columns)
-matrix_PQ_mismatch = np.zeros((1,num_busses*2))
-matrix_convergence_log = np.zeros((4,num_Busses*2))
+# matrix_PQ_mismatch = np.zeros((1,num_Busses*2))
+# matrix_convergence_log = np.zeros((4,num_Busses*2))
 
 # Determine largest mismatch in both P and Q
 # Add largest mismatch of both P and Q and ij values to matrix_convergence_log
