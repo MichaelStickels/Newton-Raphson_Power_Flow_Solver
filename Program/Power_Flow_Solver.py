@@ -6,6 +6,17 @@
 #   All values are in Per Unit unless another unit is stated
 
 
+
+
+# @@@@@@@@@@@@@@@
+#
+# Assumes that bus data is in order or bus number
+# Assumes that bus 1 is the slack bus and has no load attached
+#
+# @@@@@@@@@@@@@@@
+
+
+
 # Imports
 import numpy as np
 from numpy.core.numeric import empty_like
