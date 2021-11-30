@@ -303,12 +303,15 @@ max_mismatch = float("inf")
 # Calculate initial PQ Matrix
 PQ_matrix = PQ_Calculate(V_T_matrix)
 
-max_iterations = 20
+max_iterations = 50
 iteration = 1
 
 
 while(max_mismatch >= acceptable_mismatch and iteration <= max_iterations - 1):
 
+    # print(PQ_matrix)
+    print(V_T_matrix)
+    
     # Build Jacobian
     J_matrix = J_Calculate(V_T_matrix)
 
@@ -335,6 +338,7 @@ while(max_mismatch >= acceptable_mismatch and iteration <= max_iterations - 1):
     iteration += 1
 
 print(iteration)
+print(PQ_matrix)
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
