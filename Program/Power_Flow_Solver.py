@@ -33,9 +33,17 @@ input = pd.read_excel("data/system_basecase.xlsx", sheet_name=None)
 busData = input['BusData']
 lineData = input['LineData']
 
+
+
 # number of buses
 num_Busses = busData.shape[0]
 #print(num_Busses)
+
+# number of m busses (PQ busses, assuming only 1 is the slack bus)
+m_Busses = num_Busses - 1
+
+
+
 
 # Initialize admittance matrix
 matrix_Y_real = np.zeros((num_Busses,num_Busses))
