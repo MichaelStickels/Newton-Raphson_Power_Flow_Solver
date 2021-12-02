@@ -136,6 +136,7 @@ for y in np.arange(total_Busses):
 # Calculate P_k
 def P_k_Equation(k, v_t_mat):
     p_temp = 0
+    k = int(k)
 
     for i in np.arange(P_Busses):
         
@@ -148,9 +149,10 @@ def P_k_Equation(k, v_t_mat):
 # Calculate Q_k
 def Q_k_Equation(k, v_t_mat):
     q_temp = 0
+    k = int(k)
 
     for i in np.arange(total_Busses):
-        
+   
         q_temp += v_t_mat[int(k + total_Busses)] * v_t_mat[int(i + total_Busses)] * (matrix_Y_real[k][i] * np.sin(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k][i] * np.cos(v_t_mat[k] - v_t_mat[i]))
     
     q_temp += busData['Q MVAr'][k]
@@ -252,20 +254,32 @@ def L_quadrant_equation(k, i, v_t_mat):
 
 
 # Function to add delta V and T to VT Matrix
-def update_VT(v_t_calc_mat, v_t_old):
+def update_VT(v_t_calc_mat, v_t):
 
-    v_t_new = np.copy(v_t_old)
+    # print(v_t_calc_mat)
+    # print(v_t)
 
     # Put changes into full VT matrix
     for x in np.arange(P_Busses):
         
-        v_t_new[int(v_t_calc_mat[x][0])] = v_t_calc_mat[x][1]
+        v_t[int(v_t_calc_mat[x][0])] = v_t_calc_mat[x][1]
+
+
+    # print(v_t)
 
     for x in np.arange(P_Busses - gen_Busses):
 
-        v_t_new[int(v_t_calc_mat[x + P_Busses][0])] = v_t_calc_mat[x + P_Busses][1]
+        # print(x)
+        # print(int(v_t_calc_mat[x + P_Busses][0]))
+        # print(v_t_calc_mat[x + P_Busses][1])
+        # print(x + P_Busses)
+        # print(v_t[int(v_t_calc_mat[x + P_Busses][0])])
 
-    return v_t_new
+        v_t[int(v_t_calc_mat[x + P_Busses][0] + P_Busses + 1)] = v_t_calc_mat[x + P_Busses][1]
+
+    # print(v_t)
+
+    return v_t
 
 
 
@@ -369,7 +383,8 @@ while(max_mismatch >= acceptable_mismatch and iteration < max_iterations):
     # Build Jacobian
     J_matrix = J_Calculate(V_T_matrix)
     
-    pd.DataFrame(J_matrix).to_csv("output/Jacobian.csv")
+    # pd.DataFrame(J_matrix).to_csv("output/Jacobian.csv")
+    # exit()
 
     # Invert Jacobian
     J_inverse = np.linalg.inv(J_matrix)
@@ -377,30 +392,42 @@ while(max_mismatch >= acceptable_mismatch and iteration < max_iterations):
     # Calculate corrections
     delta_VT_matrix = np.matmul(-J_inverse, PQ_matrix)
 
+    # print(delta_VT_matrix)
+
+
     # Update V and T
     V_T_calc_new = np.copy(V_T_calc_matrix)
     for a in np.arange(P_Busses * 2 - gen_Busses):
         V_T_calc_new[a][1] += delta_VT_matrix[a]
 
+    # print(V_T_calc_new)
+
     V_T_new = update_VT(V_T_calc_new, V_T_matrix)
+
+    # print(V_T_new)
+    # exit()
 
     # Calculate Mismatch
     PQ_new = PQ_Calculate(V_T_calc_new, V_T_new)
 
-    PQ_mismatch = np.abs(PQ_new - given_PQ)
+    PQ_mismatch = np.abs(PQ_new)
 
     max_mismatch = np.amax(PQ_mismatch)
 
     print('Iteration:', iteration)
     print('Max Mismatch:', max_mismatch)
 
+    # print(V_T_new)
+
     PQ_matrix = PQ_new
     V_T_matrix = V_T_new
 
     iteration += 1
 
+
 # print(iteration)
 print(PQ_matrix)
+print(V_T_matrix)
 
 
 
