@@ -124,7 +124,7 @@ for x in np.arange(gen_Busses):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Determine P and Q Equations at Buses
 
-# Calculate P_k for busses where P load given
+# Calculate P_k for PQ busses
 def P_k_Equation(k, v_t_mat):
     p_temp = 0
 
