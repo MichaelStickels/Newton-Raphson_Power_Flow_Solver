@@ -103,45 +103,57 @@ for ind in lineData.index:
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
-# Build matrix of given active and reactive power at PQ buses
-given_PQ = np.zeros((P_Busses + gen_Busses, 1))
+# Build matrix of given active and reactive power for mismatch calculation
+given_PQ = np.zeros((P_Busses * 2 - gen_Busses, 1))
 
 for x in np.arange(P_Busses):
-    # gapminder[gapminder['year']==2002]
-    # given active power (P)
-    given_PQ[x] = (busData[busData['P MW'] > 0])['P MW'][x + 1]
     
-    # (busData['P MW'] > 0)['P MW'][x]
+    # given active power (P)
+    given_PQ[x] = ((busData[busData['Type'] != 'S'])['P MW'].to_numpy())[x] - ((busData.loc[busData['Type'] != 'S'])['P Gen'].to_numpy())[x]
 
 
-for x in np.arange(gen_Busses):
+for x in np.arange(P_Busses - gen_Busses):
 
     # given reactive power (Q)
-    given_PQ[x + P_Busses] = (busData[busData['Type'] == 'D'])['Q MVAr'][x + 1]
+    given_PQ[x + P_Busses] = ((busData[busData['Type'] == 'D'])['Q MVAr'].to_numpy())[x]
+
+
+# Initialize starting point for VT Matrix
+#   All Thetas set to 0
+#   Bus voltage set to given value from input
+V_T_matrix = np.zeros((total_Busses * 2, 1), dtype=float)
+
+for y in np.arange(total_Busses):
+
+    V_T_matrix[y + P_Busses + 1][0] = busData['V Set'][y]
+
 
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Determine P and Q Equations at Buses
 
-# Calculate P_k for PQ busses
+# Calculate P_k
 def P_k_Equation(k, v_t_mat):
     p_temp = 0
 
     for i in np.arange(P_Busses):
         
-        p_temp += v_t_mat[k + P_Busses] * v_t_mat[i + P_Busses] * (matrix_Y_real[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]) + matrix_Y_imaginary[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]))
+        p_temp += v_t_mat[int(k + total_Busses)] * v_t_mat[int(i + total_Busses)] * (matrix_Y_real[k][i] * np.cos(v_t_mat[k] - v_t_mat[i]) + matrix_Y_imaginary[k][i] * np.sin(v_t_mat[k] - v_t_mat[i]))
     
+    p_temp += busData['P MW'][k] - busData['P Gen'][k]
+
     return p_temp
 
-# Calculate Q_k for busses with generator
+# Calculate Q_k
 def Q_k_Equation(k, v_t_mat):
     q_temp = 0
 
-    for i in np.arange(P_Busses):
+    for i in np.arange(total_Busses):
         
-        q_temp += v_t_mat[k + P_Busses] * v_t_mat[i + P_Busses] * (matrix_Y_real[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]))
+        q_temp += v_t_mat[int(k + total_Busses)] * v_t_mat[int(i + total_Busses)] * (matrix_Y_real[k][i] * np.sin(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k][i] * np.cos(v_t_mat[k] - v_t_mat[i]))
     
+    q_temp += busData['Q MVAr'][k]
     
     return q_temp
 
@@ -238,15 +250,38 @@ def L_quadrant_equation(k, i, v_t_mat):
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
+
+# Function to add delta V and T to VT Matrix
+def update_VT(v_t_calc_mat, v_t_old):
+
+    v_t_new = np.copy(v_t_old)
+
+    # Put changes into full VT matrix
+    for x in np.arange(P_Busses):
+        
+        v_t_new[int(v_t_calc_mat[x][0])] = v_t_calc_mat[x][1]
+
+    for x in np.arange(P_Busses - gen_Busses):
+
+        v_t_new[int(v_t_calc_mat[x + P_Busses][0])] = v_t_calc_mat[x + P_Busses][1]
+
+    return v_t_new
+
+
+
 # Function to calculate PQ matrix
-def PQ_Calculate(v_t_mat):
-    pq_mat = np.zeros((P_Busses*2, 1))
+def PQ_Calculate(v_t_calc_mat, v_t_mat):
 
-    for k in np.arange(P_Busses):
+    
+    pq_mat = np.zeros((P_Busses*2 - gen_Busses, 1))
 
-        pq_mat[k] = P_k_Equation(k, v_t_mat)
+    for y in np.arange(P_Busses):
 
-        pq_mat[k + P_Busses] = Q_k_Equation(k, v_t_mat)
+        pq_mat[y] = P_k_Equation(y + 1, v_t_mat)
+
+    for z in np.arange(P_Busses - gen_Busses):
+
+        pq_mat[z + P_Busses] = Q_k_Equation(v_t_calc_mat[z + P_Busses][0], v_t_mat)
 
     return pq_mat
 
@@ -258,16 +293,30 @@ def PQ_Calculate(v_t_mat):
 #       (N L)
 #
 def J_Calculate(v_t_mat):
-    J_mat = np.zeros((P_Busses*2, P_Busses*2))
+
+    J_mat = np.zeros((P_Busses * 2 - gen_Busses, P_Busses * 2 - gen_Busses))
 
     for a in np.arange(P_Busses):
 
-        for b in np.arange(P_Busses):
+        for b1 in np.arange(P_Busses):
 
-            J_mat[a,b] = H_quadrant_equation(a, b, v_t_mat)
-            J_mat[a,b + P_Busses] = M_quadrant_equation(a, b, v_t_mat)
-            J_mat[a + P_Busses,b] = N_quadrant_equation(a, b, v_t_mat)
-            J_mat[a + P_Busses,b + P_Busses] = L_quadrant_equation(a, b, v_t_mat)
+            J_mat[a,b1] = H_quadrant_equation(a + 1, b1 + 1, v_t_mat)
+
+        for b2 in np.arange(P_Busses - gen_Busses):
+
+            J_mat[a,b2 + P_Busses] = M_quadrant_equation(a + 1, b2 + 1, v_t_mat)
+            
+    
+    for a in np.arange(P_Busses - gen_Busses):
+
+        for b1 in np.arange(P_Busses):
+
+            J_mat[a + P_Busses,b1] = N_quadrant_equation(a + 1, b1 + 1, v_t_mat)
+
+        for b2 in np.arange(P_Busses - gen_Busses):
+
+            J_mat[a + P_Busses,b2 + P_Busses] = L_quadrant_equation(a + 1, b2 + 1, v_t_mat)
+            
 
     return J_mat
 
@@ -276,12 +325,6 @@ def J_Calculate(v_t_mat):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Set start values for power flow calculation
 
-# Initialize starting point for VT Matrix
-V_T_matrix = np.zeros((P_Busses * 2 - gen_Busses, 1), dtype=float)
-
-for y in np.arange(P_Busses - gen_Busses):
-    # V_T_matrix[y + P_Busses][0] = busData[busData['Type'] == 'D']['V set']
-    # busData['V Set'][y + 1]
 
 # gen_Busses = busData[busData['P Gen'] > 0].count()["P Gen"]
 
@@ -289,12 +332,28 @@ for y in np.arange(P_Busses - gen_Busses):
 max_mismatch = acceptable_mismatch + 10
 
 
-# Calculate initial PQ Matrix
-PQ_matrix = PQ_Calculate(V_T_matrix)
-
+# some fun parameters for a rainy day
 max_iterations = 50
 iteration = 1
 
+
+# Define start points
+PQ_matrix = np.copy(given_PQ)
+
+V_T_calc_matrix = np.zeros((P_Busses * 2 - gen_Busses, 2))
+
+for a in np.arange(P_Busses):
+    
+    V_T_calc_matrix[a][0] = a + 1
+
+for a in np.arange(P_Busses - gen_Busses):
+    
+    V_T_calc_matrix[a + P_Busses][0] = ((busData[busData['Type'] == 'D'])['Bus #'].to_numpy())[a] - 1
+
+    V_T_calc_matrix[a + P_Busses][1] = 1
+
+# print(V_T_matrix)
+# print(V_T_calc_matrix)
 
 
 
@@ -302,13 +361,15 @@ iteration = 1
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 # Newton-Raphson algorithm
 
-while(max_mismatch >= acceptable_mismatch and iteration <= max_iterations - 1):
+while(max_mismatch >= acceptable_mismatch and iteration < max_iterations):
 
     # print(PQ_matrix)
     # print(V_T_matrix)
-    
+
     # Build Jacobian
     J_matrix = J_Calculate(V_T_matrix)
+    
+    pd.DataFrame(J_matrix).to_csv("output/Jacobian.csv")
 
     # Invert Jacobian
     J_inverse = np.linalg.inv(J_matrix)
@@ -317,10 +378,14 @@ while(max_mismatch >= acceptable_mismatch and iteration <= max_iterations - 1):
     delta_VT_matrix = np.matmul(-J_inverse, PQ_matrix)
 
     # Update V and T
-    V_T_new = V_T_matrix + delta_VT_matrix
+    V_T_calc_new = np.copy(V_T_calc_matrix)
+    for a in np.arange(P_Busses * 2 - gen_Busses):
+        V_T_calc_new[a][1] += delta_VT_matrix[a]
+
+    V_T_new = update_VT(V_T_calc_new, V_T_matrix)
 
     # Calculate Mismatch
-    PQ_new = PQ_Calculate(V_T_new)
+    PQ_new = PQ_Calculate(V_T_calc_new, V_T_new)
 
     PQ_mismatch = np.abs(PQ_new - given_PQ)
 
@@ -335,7 +400,7 @@ while(max_mismatch >= acceptable_mismatch and iteration <= max_iterations - 1):
     iteration += 1
 
 # print(iteration)
-# print(PQ_matrix)
+print(PQ_matrix)
 
 
 
