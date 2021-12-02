@@ -24,7 +24,8 @@ import pandas as pd
 
 
 # Constants & Parameters
-S_BASE = 100 #MVA
+S_BASE = 100 # MVA
+acceptable_mismatch = 0.1 # Highest allowable mismatch for power flow calculation
 
 
 
@@ -116,10 +117,8 @@ for x in np.arange(P_Busses):
 for x in np.arange(gen_Busses):
 
     # given reactive power (Q)
-    given_PQ[x + P_Busses] = (busData[busData['P Gen'] > 0])['Q MVAr'][x + 1]
+    given_PQ[x + P_Busses] = (busData[busData['Type'] == 'D'])['Q MVAr'][x + 1]
 
-print(given_PQ)
-exit()
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -154,17 +153,11 @@ def Q_k_Equation(k, v_t_mat):
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Initialize Jacobian matrix
-# matrix_J = np.zeros((P_Busses*2,P_Busses*2))
-
-# For H quadrant:
-# Off diagonals: 
-# matrix_J[i,j] = v_k * v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j] * cos (theta))                 ## (v_k = this bus; v_i = opposite bus)
-
-# Collector: collector += v_k * v_i * (matrix_Y_imaginary[i,j] * cos (theta) - matrix_Y_real[i,j] * sin (theta))                 ## (v_k = this bus; v_i = opposite bus)
-
-# Diagonals: 
-# matrix_J[i,i] = collector
+# Define functions for calculating Jacobian values
+#
+#   J = (H M)
+#       (N L)
+#
 
 def H_quadrant_equation(k, i, v_t_mat):
     
@@ -183,17 +176,6 @@ def H_quadrant_equation(k, i, v_t_mat):
     
     return H_temp
 
-
-
-
-# For M quadrant:
-# Off diagonals:
-# matrix_J[i,j + P_Busses] = v_k * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))       ## (v_k = this bus; v_i = opposite bus)
-
-# Collector: collector2 += v_i * (matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))                  ## (v_k = this bus; v_i = opposite bus)
-
-# Diagonals:
-# matrix_J[i,i + P_Busses] = collector2 + 2 * matrix_Y_real[i,i] * v_k                  ## (v_k = this bus; v_i = opposite bus)
 
 def M_quadrant_equation(k, i, v_t_mat):
     
@@ -215,16 +197,6 @@ def M_quadrant_equation(k, i, v_t_mat):
     return M_temp
 
 
-
-# For N quadrant:
-# Off diagonals:
-# matrix_J[i + P_Busses, j] = v_k * v_i * ((-1) * matrix_Y_real[i,j] * cos (theta) - matrix_Y_imaginary[i,j] * sin (theta))
-
-# Collector: collector3 += v_k * v_i * (* matrix_Y_real[i,j] * cos (theta) + matrix_Y_imaginary[i,j] * sin (theta))
-
-# Diagonals:
-# matrix_J[i + P_Busses, i] = collector3
-
 def N_quadrant_equation(k, i, v_t_mat):
     
     N_temp = 0
@@ -241,15 +213,6 @@ def N_quadrant_equation(k, i, v_t_mat):
         N_temp = v_t_mat[k + P_Busses] * v_t_mat[i + P_Busses] * (-matrix_Y_real[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]))
     
     return N_temp
-
-# For L quadrant:
-# Off diagonals:
-# matrix_J[i + P_Busses, j + P_Busses] = v_k * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
-
-# Collector: collector4 += v_i * (matrix_Y_real[i,j] * sin (theta) - matrix_Y_imaginary[i,j])
-
-# Diagonals:
-# matrix_J[ i+ P_Busses, i + P_Busses] = collector4 - 2 * matrix_Y_imaginary * v_k
 
 
 def L_quadrant_equation(k, i, v_t_mat):
@@ -272,15 +235,8 @@ def L_quadrant_equation(k, i, v_t_mat):
     return L_temp
 
 
-# print(matrix_J)
 
-# Invert Jacobian Matrix
-
-# matrix_Inverse_Jacobian = np.linalg.inv(matrix_J)
-
-# print(matrix_Inverse_Jacobian)
-
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
 
 # Function to calculate PQ matrix
 def PQ_Calculate(v_t_mat):
@@ -293,6 +249,8 @@ def PQ_Calculate(v_t_mat):
         pq_mat[k + P_Busses] = Q_k_Equation(k, v_t_mat)
 
     return pq_mat
+
+
 
 # Function to calculate J matrix
 #
@@ -315,22 +273,17 @@ def J_Calculate(v_t_mat):
 
 
 
-#@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-
+# Set start values for power flow calculation
 
 # Initialize starting point for VT Matrix
-V_T_matrix = np.zeros((P_Busses*2, 1), dtype=float)
+V_T_matrix = np.zeros((P_Busses * 2 - gen_Busses, 1), dtype=float)
 
-for y in np.arange(P_Busses):
-    V_T_matrix[y + P_Busses][0] = busData['V Set'][y + 1]
+for y in np.arange(P_Busses - gen_Busses):
+    # V_T_matrix[y + P_Busses][0] = busData[busData['Type'] == 'D']['V set']
+    # busData['V Set'][y + 1]
 
-# print(V_T_matrix)
-
-# Set mismatch target
-acceptable_mismatch = 0.1
-
+# gen_Busses = busData[busData['P Gen'] > 0].count()["P Gen"]
 
 # Initialize mismatch to arbitrarily high value
 max_mismatch = acceptable_mismatch + 10
@@ -343,10 +296,16 @@ max_iterations = 50
 iteration = 1
 
 
+
+
+
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Newton-Raphson algorithm
+
 while(max_mismatch >= acceptable_mismatch and iteration <= max_iterations - 1):
 
     # print(PQ_matrix)
-    print(V_T_matrix)
+    # print(V_T_matrix)
     
     # Build Jacobian
     J_matrix = J_Calculate(V_T_matrix)
@@ -366,6 +325,8 @@ while(max_mismatch >= acceptable_mismatch and iteration <= max_iterations - 1):
     PQ_mismatch = np.abs(PQ_new - given_PQ)
 
     max_mismatch = np.amax(PQ_mismatch)
+
+    print('Iteration:', iteration)
     print('Max Mismatch:', max_mismatch)
 
     PQ_matrix = PQ_new
@@ -373,40 +334,13 @@ while(max_mismatch >= acceptable_mismatch and iteration <= max_iterations - 1):
 
     iteration += 1
 
-print(iteration)
+# print(iteration)
 # print(PQ_matrix)
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Calculate P and Q Mismatches
 
-# Initialize matrix_PQ_given (needs to be single dimension with P_n in top half and Q_n in bottom half)
-# Read P and Q data from csv and input to matrix_PQ_given
-# matrix_PQ_given = np.zeros((1,P_Busses*2))
 
-# Combine PQ matrices via loop
-# matrix_PQ_equations[i,j] = matrix_PQ_equations[i,j] - matrix_PQ_given[i,j]   ## matrix_PQ_equations comes from two sections above.
-
-# Initialize matrix_deltaTheta_deltaV (needs to be same shape as matrix_PQ_equations)
-# matrix_deltaTheta_deltaV = np.zeros((1,P_Busses*2))
-
-# Flat Start (set all values in matrix_deltaTheta_deltaV to 1.0 and 0.0, respectively)
-
-# Update matrix_PQ_quantities after flat start
-
-# Initialize matrix_PQ_mismatch and matrix_convergence_log (needs 4 columns)
-# matrix_PQ_mismatch = np.zeros((1,P_Busses*2))
-# matrix_convergence_log = np.zeros((4,P_Busses*2))
-
-# Determine largest mismatch in both P and Q
-# Add largest mismatch of both P and Q and ij values to matrix_convergence_log
-
-# While any values of matrix_PQ_mismatch > 0.1:
-    # matrix_deltaTheta_deltaV =  matrix_Inverse_jacobian * matrix_PQ_quantities * (-1)
-    # matrix_deltaTheta_deltaV += matrix_deltaTheta_deltaV
-    # matrix_PQ_quantities = matrix_PQ_equations with matrix_deltaTheta_deltaV plugged in
-    # determine largest mismatch in both P and Q
-    # add largest mismatch of both P and Q and ij values to matrix_convergence_log
+# @@@@@@@@@@@@@@
 
 # Print matrix_convergence_log
 # Print matrix_PQ_quantities
