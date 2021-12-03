@@ -1,6 +1,6 @@
 
 #   Power Flow Solver
-#   Michael Stickels
+#   Michael Stickels, Mike Mayhew
 #   10/28/2021
 #
 #   All values are in Per Unit unless another unit is stated
