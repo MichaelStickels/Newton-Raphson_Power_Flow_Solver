@@ -179,14 +179,15 @@ def H_quadrant_equation(k, i, v_t_mat):
 
     if(k == i):
 
-        for x in np.arange(P_Busses):
+        for x in np.arange(total_Busses):
             if(x != k):
                 
-                H_temp += v_t_mat[k + P_Busses] * v_t_mat[x + P_Busses] * (-matrix_Y_real[k,x] * np.sin(v_t_mat[k] - v_t_mat[x]) + matrix_Y_imaginary[k,x] * np.cos(v_t_mat[k] - v_t_mat[x]))
+                H_temp += v_t_mat[k + P_Busses] * v_t_mat[x + P_Busses + 1] * (-matrix_Y_real[k,x] * np.sin(v_t_mat[k] - v_t_mat[x]) + matrix_Y_imaginary[k,x] * np.cos(v_t_mat[k] - v_t_mat[x]))
+
 
     else:
 
-        H_temp = v_t_mat[k + P_Busses] * v_t_mat[i + P_Busses] * (matrix_Y_real[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]))
+        H_temp = v_t_mat[k + P_Busses] * v_t_mat[i + P_Busses + 1] * (matrix_Y_real[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]))
     
     print(v_t_mat[k + P_Busses])
     return H_temp
@@ -198,10 +199,10 @@ def M_quadrant_equation(k, i, v_t_mat):
 
     if(k == i):
 
-        for x in np.arange(P_Busses):
+        for x in np.arange(total_Busses):
             if(x != k):
                 
-                M_temp += v_t_mat[x + P_Busses] * (matrix_Y_real[k,x] * np.cos(v_t_mat[k] - v_t_mat[x]) + matrix_Y_imaginary[k,x] * np.sin(v_t_mat[k] - v_t_mat[x]))
+                M_temp += v_t_mat[x + P_Busses + 1] * (matrix_Y_real[k,x] * np.cos(v_t_mat[k] - v_t_mat[x]) + matrix_Y_imaginary[k,x] * np.sin(v_t_mat[k] - v_t_mat[x]))
 
         M_temp +=  2 * matrix_Y_real[k,k] * v_t_mat[k + P_Busses]
 
@@ -218,14 +219,14 @@ def N_quadrant_equation(k, i, v_t_mat):
 
     if(k == i):
 
-        for x in np.arange(P_Busses):
+        for x in np.arange(total_Busses):
             if(x != k):
                 
-                N_temp += v_t_mat[k + P_Busses] * v_t_mat[x + P_Busses] * (-matrix_Y_real[k,x] * np.cos(v_t_mat[k] - v_t_mat[x]) - matrix_Y_imaginary[k,x] * np.sin(v_t_mat[k] - v_t_mat[x]))
+                N_temp += v_t_mat[k + P_Busses] * v_t_mat[x + P_Busses + 1] * (-matrix_Y_real[k,x] * np.cos(v_t_mat[k] - v_t_mat[x]) - matrix_Y_imaginary[k,x] * np.sin(v_t_mat[k] - v_t_mat[x]))
 
     else:
 
-        N_temp = v_t_mat[k + P_Busses] * v_t_mat[i + P_Busses] * (-matrix_Y_real[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]))
+        N_temp = v_t_mat[k + P_Busses] * v_t_mat[i + P_Busses + 1] * (-matrix_Y_real[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]))
     
     return N_temp
 
@@ -236,10 +237,10 @@ def L_quadrant_equation(k, i, v_t_mat):
 
     if(k == i):
 
-        for x in np.arange(P_Busses):
+        for x in np.arange(total_Busses):
             if(x != k):
                 
-                L_temp += v_t_mat[x + P_Busses] * (matrix_Y_real[k,x] * np.sin(v_t_mat[k] - v_t_mat[x]) - matrix_Y_imaginary[k,x] * np.cos(v_t_mat[k] - v_t_mat[x]))
+                L_temp += v_t_mat[x + P_Busses + 1] * (matrix_Y_real[k,x] * np.sin(v_t_mat[k] - v_t_mat[x]) - matrix_Y_imaginary[k,x] * np.cos(v_t_mat[k] - v_t_mat[x]))
 
         L_temp += -2 * matrix_Y_imaginary[k,k] * v_t_mat[k + P_Busses]
 
