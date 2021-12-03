@@ -370,6 +370,9 @@ for a in np.arange(P_Busses - gen_Busses):
 # print(V_T_calc_matrix)
 
 
+# Dataframe to save convergence history
+convergence_history = np.array(['Iterations:', 'Max Mismatch:'])
+
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -383,8 +386,9 @@ while(max_mismatch >= acceptable_mismatch and iteration < max_iterations):
     # Build Jacobian
     J_matrix = J_Calculate(V_T_matrix)
     
-    pd.DataFrame(J_matrix).to_csv("output/Jacobian.csv")
-    exit()
+    # Save Jacobian to CSV and halt
+    # pd.DataFrame(J_matrix).to_csv("output/Jacobian.csv")
+    # exit()
 
     # Invert Jacobian
     J_inverse = np.linalg.inv(J_matrix)
@@ -417,6 +421,8 @@ while(max_mismatch >= acceptable_mismatch and iteration < max_iterations):
     print('Iteration:', iteration)
     print('Max Mismatch:', max_mismatch)
 
+    convergence_history = np.vstack([convergence_history, [iteration, max_mismatch]])
+    
     # print(V_T_new)
 
     PQ_matrix = PQ_new
@@ -424,6 +430,9 @@ while(max_mismatch >= acceptable_mismatch and iteration < max_iterations):
 
     iteration += 1
 
+
+# export covnergence history CSV
+pd.DataFrame(convergence_history).to_csv("output/Convergence History.csv")
 
 # print(iteration)
 print(PQ_matrix)
