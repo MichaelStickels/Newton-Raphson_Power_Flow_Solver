@@ -79,10 +79,10 @@ for ind in lineData.index:
 for i in np.arange(0,matrix_Y_real.shape[0]):
 
     # Real part -> ?
-    matrix_Y_real[i,i] = matrix_Y_real.sum(axis=1)[i]
+    matrix_Y_real[i,i] = matrix_Y_real.sum(axis=1)[i] * -1
 
     # Imaginary part -> ?
-    matrix_Y_imaginary[i,i] = matrix_Y_imaginary.sum(axis=1)[i]
+    matrix_Y_imaginary[i,i] = matrix_Y_imaginary.sum(axis=1)[i] * -1
 
 # Add shunt admittances to diagonals (bus admittances)
 for ind in lineData.index:
@@ -347,7 +347,7 @@ max_mismatch = acceptable_mismatch + 10
 
 
 # some fun parameters for a rainy day
-max_iterations = 50
+max_iterations = 2
 iteration = 1
 
 
