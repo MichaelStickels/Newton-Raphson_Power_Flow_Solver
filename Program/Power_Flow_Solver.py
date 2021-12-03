@@ -96,8 +96,8 @@ for ind in lineData.index:
 
 
 # Export matrix Y to csv files for troubleshooting
-# pd.DataFrame(matrix_Y_real).to_csv("output/matrix_Y_real.csv")
-# pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
+pd.DataFrame(matrix_Y_real).to_csv("output/matrix_Y_real.csv")
+pd.DataFrame(matrix_Y_imaginary).to_csv("output/matrix_Y_imaginary.csv")
 
 
 
@@ -347,7 +347,7 @@ max_mismatch = acceptable_mismatch + 10
 
 
 # some fun parameters for a rainy day
-max_iterations = 2
+max_iterations = 20
 iteration = 1
 
 
