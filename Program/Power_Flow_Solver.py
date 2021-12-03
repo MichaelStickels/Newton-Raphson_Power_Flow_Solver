@@ -188,6 +188,7 @@ def H_quadrant_equation(k, i, v_t_mat):
 
         H_temp = v_t_mat[k + P_Busses] * v_t_mat[i + P_Busses] * (matrix_Y_real[k,i] * np.sin(v_t_mat[k] - v_t_mat[i]) - matrix_Y_imaginary[k,i] * np.cos(v_t_mat[k] - v_t_mat[i]))
     
+    print(v_t_mat[k + P_Busses])
     return H_temp
 
 
