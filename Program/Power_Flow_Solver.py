@@ -383,8 +383,8 @@ while(max_mismatch >= acceptable_mismatch and iteration < max_iterations):
     # Build Jacobian
     J_matrix = J_Calculate(V_T_matrix)
     
-    # pd.DataFrame(J_matrix).to_csv("output/Jacobian.csv")
-    # exit()
+    pd.DataFrame(J_matrix).to_csv("output/Jacobian.csv")
+    exit()
 
     # Invert Jacobian
     J_inverse = np.linalg.inv(J_matrix)
