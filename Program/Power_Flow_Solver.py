@@ -434,36 +434,48 @@ while(max_mismatch >= acceptable_mismatch and iteration < max_iterations):
 # export covnergence history CSV
 pd.DataFrame(convergence_history).to_csv("output/Convergence History.csv")
 
-# print(iteration)
+# export final bus results
+pd.DataFrame(PQ_matrix).to_csv("output/Final PQ Matrix.csv")
+pd.DataFrame(V_T_matrix).to_csv("output/Final VT Matrix.csv")
+
+
 print(PQ_matrix)
 print(V_T_matrix)
 
 
 
 
-# @@@@@@@@@@@@@@
-
-# Print matrix_convergence_log
-# Print matrix_PQ_quantities
-# Print 
-
-
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+# Calculate Line Flow P, Q and S
+
+# Funtion to calculate active power in line k to i
+def active_line_power(k, i, v_t_mat):
+
+    p = v_t_mat[k + total_Busses - 1] * v_t_mat[k + total_Busses - 1] * (matrix_Y_real[k - 1][i - 1] * np.cos(v_t_mat[k - 1] - v_t_mat[i -1]) + matrix_Y_imaginary[k - 1][i - 1] * np.sin(v_t_mat[k - 1] - v_t_mat[i -1]))
+
+    return p
+
+# Function to calculate reactive power in line k to i
+def reactive_line_power(k, i, v_t_mat):
+
+    q = v_t_mat[k + total_Busses - 1] * v_t_mat[k + total_Busses - 1] * (matrix_Y_real[k - 1][i - 1] * np.sin(v_t_mat[k - 1] - v_t_mat[i -1]) - matrix_Y_imaginary[k - 1][i - 1] * np.cos(v_t_mat[k - 1] - v_t_mat[i -1]))
+
+    return q
 
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Determine P and Q At Generators
+# line_flows = [P, Q, S], export to CSV
+line_flows = np.zeros((len(lineData), 3))
 
+for a in np.arange(len(lineData)):
 
+    line_flows[a][0] = active_line_power(lineData['From'][a], lineData['To'][a], V_T_matrix)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
+    line_flows[a][1] = reactive_line_power(lineData['From'][a], lineData['To'][a], V_T_matrix)
 
+    line_flows[a][2] = np.sqrt(line_flows[a][0]**2 + line_flows[a][1]**2)
 
-# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
-# Calculate Line Currents
+pd.DataFrame(line_flows).to_csv("output/Line Power Flows.csv")
 
-
-# Calculate Line P, Q and S
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
@@ -473,16 +485,17 @@ print(V_T_matrix)
 # Build Ratings Matrix [Use Common Structure For All Matrices]
 
 
+
 # Check Node Voltages Against Ratings
+
 
 
 # Check Line Power Flows Against Ratings
 
 
-# Check Generator Power Against Ratings     ???????????
-
 
 # Flag Violations of Operating Limits / Settings
+
 
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ #
